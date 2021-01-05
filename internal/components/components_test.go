@@ -51,6 +51,7 @@ func TestDefaultComponents(t *testing.T) {
 		"receiver_creator",
 		"redis",
 		"sapm",
+		"smartagent",
 		"signalfx",
 		"splunk_hec",
 		"statsd",

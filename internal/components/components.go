@@ -61,6 +61,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
+
+	"github.com/signalfx/splunk-otel-collector/internal/receiver/smartagentreceiver"
 )
 
 func Get() (component.Factories, error) {
@@ -94,6 +96,7 @@ func Get() (component.Factories, error) {
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
+		smartagentreceiver.NewFactory(),
 		signalfxreceiver.NewFactory(),
 		simpleprometheusreceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),

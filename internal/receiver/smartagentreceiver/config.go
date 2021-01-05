@@ -1,0 +1,130 @@
+// Copyright 2021, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package smartagentreceiver
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/signalfx/defaults"
+	_ "github.com/signalfx/signalfx-agent/pkg/core" // required to invoke monitor registration via init() calls
+	"github.com/signalfx/signalfx-agent/pkg/core/config"
+	"github.com/signalfx/signalfx-agent/pkg/core/config/validation"
+	"github.com/signalfx/signalfx-agent/pkg/monitors"
+	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"gopkg.in/yaml.v2"
+)
+
+type Config struct {
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	monitorConfig                 config.MonitorCustomConfig
+}
+
+func (rCfg *Config) validate() error {
+	if rCfg.monitorConfig == nil {
+		return fmt.Errorf("must supply a valid Smart Agent Monitor config")
+	}
+
+	monitorConfigCore := rCfg.monitorConfig.MonitorConfigCore()
+	if monitorConfigCore.IntervalSeconds == 0 {
+		monitorConfigCore.IntervalSeconds = 10
+	} else if monitorConfigCore.IntervalSeconds < 0 {
+		return fmt.Errorf("intervalSeconds must be greater than 0s (%d provided)", monitorConfigCore.IntervalSeconds)
+	}
+
+	if err := validation.ValidateStruct(rCfg.monitorConfig); err != nil {
+		return err
+	}
+	return validation.ValidateCustomConfig(rCfg.monitorConfig)
+}
+
+// mergeConfigs is used as a custom unmarshaller to dynamically create the desired Smart Agent monitor config
+// from the provided receiver config content.
+func mergeConfigs(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	// AllSettings() will include anything not already unmarshalled in the Config instance (*intoCfg).
+	// This includes all Smart Agent monitor config settings that can be unmarshalled to their
+	// respective custom monitor config types.
+	allSettings := componentViperSection.AllSettings()
+	var monitorType string
+	var ok bool
+	if monitorType, ok = allSettings["type"].(string); !ok || monitorType == "" {
+		return fmt.Errorf(`you must specify a "type" for a smartagent receiver`)
+	}
+
+	// monitors.ConfigTemplates is a map that all monitors use to register their custom configs in the Smart Agent.
+	// The values are always pointers to an actual custom config.
+	var customMonitorConfig config.MonitorCustomConfig
+	if customMonitorConfig, ok = monitors.ConfigTemplates[monitorType]; !ok {
+		return fmt.Errorf("no known monitor type %q", monitorType)
+	}
+	monitorConfigType := reflect.TypeOf(customMonitorConfig).Elem()
+	monitorConfig := reflect.New(monitorConfigType).Interface()
+
+	// Viper is case insensitive and doesn't preserve a record of actual yaml map key cases from the provided config,
+	// which is a problem when unmarshalling custom agent monitor configs.  Here we use a map of lowercase to supported
+	// case tag key names and update the keys where applicable.
+	yamlTags := yamlTagsFromStruct(monitorConfigType)
+	for key, val := range allSettings {
+		updatedKey := yamlTags[key]
+		if updatedKey != "" {
+			delete(allSettings, key)
+			allSettings[updatedKey] = val
+		}
+	}
+
+	asBytes, err := yaml.Marshal(allSettings)
+	if err != nil {
+		return err
+	}
+	err = yaml.UnmarshalStrict(asBytes, monitorConfig)
+	if err != nil {
+		return err
+	}
+
+	err = defaults.Set(monitorConfig)
+	if err != nil {
+		return err
+	}
+	receiverCfg := intoCfg.(*Config)
+	receiverCfg.monitorConfig = monitorConfig.(config.MonitorCustomConfig)
+	return nil
+}
+
+// Walks through a custom monitor config struct type, creating a map of
+// lowercase to supported yaml struct tag name cases.
+func yamlTagsFromStruct(s reflect.Type) map[string]string {
+	yamlTags := map[string]string{}
+	for i := 0; i < s.NumField(); i++ {
+		field := s.Field(i)
+		tag := field.Tag
+		yamlTag := strings.Split(tag.Get("yaml"), ",")[0]
+		lowerTag := strings.ToLower(yamlTag)
+		if yamlTag != lowerTag {
+			yamlTags[lowerTag] = yamlTag
+		}
+
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Struct {
+			otherFields := yamlTagsFromStruct(fieldType)
+			for k, v := range otherFields {
+				yamlTags[k] = v
+			}
+		}
+	}
+
+	return yamlTags
+}
