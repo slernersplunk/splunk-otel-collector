@@ -392,7 +392,8 @@ jobs:
           name: Test << parameters.package_type >> package installation
           command: |
             mkdir -p ~/testresults
-            pytest -n2 --verbose -m << parameters.package_type >> \
+            mkdir -p /tmp/scratch
+            pytest --verbose -m << parameters.package_type >> \
               --junitxml=~/testresults/results.xml\
               --html=~/testresults/results.html\
               --self-contained-html \
@@ -428,7 +429,8 @@ jobs:
             else
               PACKAGE_TYPE=rpm
             fi
-            pytest -n2 --verbose -m $PACKAGE_TYPE \
+            mkdir -p /tmp/scratch
+            pytest --verbose -m $PACKAGE_TYPE \
               --junitxml=~/testresults/results.xml \
               --html=~/testresults/results.html \
               --self-contained-html \

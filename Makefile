@@ -176,3 +176,14 @@ binaries-windows_amd64:
 	$(MAKE) binaries-linux_$(ARCH)
 	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
+
+.PHONY: run-pytest
+run-pytest:
+	docker build -t otelcol-pytest:latest internal/buildscripts/packaging/tests
+	mkdir -p /tmp/scratch
+	docker run -it --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock:ro \
+		-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+		-v /tmp/scratch:/tmp/scratch \
+		-v $(CURDIR):/repo \
+		otelcol-pytest bash
