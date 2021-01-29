@@ -1,0 +1,29 @@
+resource_metrics:
+  - ilms:
+      - metrics:
+          - name: postgres_sessions
+            type: gauge
+          - name: postgres_block_hit_ratio
+            type: gauge
+          - name: postgres_database_size
+            type: gauge
+          - name: postgres_deadlocks
+            type: cumulative
+          - name: postgres_query_count
+            type: cumulative
+          - name: postgres_query_time
+            type: cumulative
+          - name: postgres_rows_inserted
+            type: cumulative
+          - name: postgres_rows_updated
+            type: cumulative
+          - name: postgres_rows_deleted
+            type: cumulative
+          - name: postgres_sequential_scans
+            type: cumulative
+          - name: postgres_index_scans
+            type: cumulative
+          - name: postgres_table_size
+            type: gauge
+          - name: postgres_live_rows
+            type: gauge

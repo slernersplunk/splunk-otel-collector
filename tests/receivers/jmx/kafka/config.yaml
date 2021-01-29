@@ -1,0 +1,18 @@
+receivers:
+  smartagent:
+    type: collectd/kafka
+    host: localhost
+    port: 7199
+    clusterName: somecluster
+
+exporters:
+  logging:
+    loglevel: debug
+    sampling_initial: 1
+    sampling_thereafter: 1
+
+service:
+  pipelines:
+    metrics:
+      receivers: [smartagent]
+      exporters: [logging]

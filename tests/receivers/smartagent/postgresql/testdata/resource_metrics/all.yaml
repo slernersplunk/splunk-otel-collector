@@ -1,0 +1,49 @@
+resource_metrics:
+  - ilms:
+      - metrics:
+          - name: postgres_block_hit_ratio
+            type: gauge
+          - name: postgres_conflicts
+            type: cumulative
+          - name: postgres_database_size
+            type: gauge
+          - name: postgres_deadlocks
+            type: cumulative
+          - name: postgres_index_scans
+            type: cumulative
+          - name: postgres_live_rows
+            type: gauge
+          - name: postgres_locks
+            type: gauge
+          - name: postgres_pct_connections
+            type: gauge
+          - name: postgres_queries_average_time
+            type: cumulative
+          - name: postgres_queries_calls
+            type: cumulative
+          - name: postgres_queries_total_time
+            type: cumulative
+          - name: postgres_query_count
+            type: cumulative
+          - name: postgres_query_time
+            type: cumulative
+          - name: postgres_replication_lag
+            type: gauge
+          - name: postgres_replication_state
+            type: gauge
+          - name: postgres_rows_deleted
+            type: cumulative
+          - name: postgres_rows_inserted
+            type: cumulative
+          - name: postgres_rows_updated
+            type: cumulative
+          - name: postgres_sequential_scans
+            type: cumulative
+          - name: postgres_sessions
+            type: gauge
+          - name: postgres_table_size
+            type: gauge
+          - name: postgres_xact_commits
+            type: cumulative
+          - name: postgres_xact_rollbacks
+            type: cumulative
